@@ -1,4 +1,5 @@
-import logging, config, sql, asyncio, wget, os
+import logging, config, sql, asyncio, os, aiohttp
+from urllib.parse import urlparse
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ParseMode
@@ -15,6 +16,26 @@ dp = Dispatcher(bot)
 # инициализируем соединение с БД
 du = sql.Users('../db/users.db')
 dc = sql.Clock('../db/clock.db')
+
+
+def is_valid_ical_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    return (parsed.scheme in ('http', 'https') and
+            parsed.netloc.endswith('yandex.ru') and
+            parsed.path.endswith('.ics'))
+
+
+async def download_ical(url: str, dest: str) -> None:
+    timeout = aiohttp.ClientTimeout(total=10)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url) as resp:
+            resp.raise_for_status()
+            data = await resp.read()
+    with open(dest, 'wb') as f:
+        f.write(data)
 
 
 # ПРИВЕТСТВЕННОЕ СООБЩЕНИЕ
@@ -198,27 +219,37 @@ async def daily_up(message: types.Message):
 async def downloading_file_ics(message: types.Message):
     user_id = du.get_user_id(int(message.chat.id))
 
-    if message.text[:5] == "https":
-        try:
-            wget.download(message.text, f'../data/icals/{str(user_id)}_new.ics')
-
+    if message.text.startswith("http"):
+        url = message.text.strip()
+        if is_valid_ical_url(url):
+            tmp_path = f'../data/icals/{str(user_id)}_new.ics'
+            final_path = f'../data/icals/{str(user_id)}.ics'
             try:
-                os.remove(f'../data/icals/{str(user_id)}.ics')
-            except FileNotFoundError:
-                pass
+                await download_ical(url, tmp_path)
+                try:
+                    os.remove(final_path)
+                except FileNotFoundError:
+                    logging.warning(f"Old calendar not found for user {user_id}")
+                except OSError as e:
+                    logging.error(f"Error removing old calendar for user {user_id}: {e}")
+                os.rename(tmp_path, final_path)
 
-            os.rename(f'../data/icals/{str(user_id)}_new.ics', f'../data/icals/{str(user_id)}.ics')
+                time_zone = url.split("=")[-1]
+                if not du.url_exists(user_id):
+                    du.add_url(user_id, url, time_zone)
+                    dc.add_clock(user_id)
+                else:
+                    du.update_url(user_id, url, time_zone)
 
-            time_zone = message.text.split("=")[-1]
-            if not du.url_exists(user_id):
-                du.add_url(user_id, message.text, time_zone)
-                dc.add_clock(user_id)
-            else:
-                du.update_url(user_id, message.text, time_zone)
-
-            await message.answer("Ссылка успешно добавлена! Уведомления уже включены!")
-        except Exception:
-            await message.answer("Ошибка скачивания! Проверьте правильность ссылки и пришлите ещё раз")
+                await message.answer("Ссылка успешно добавлена! Уведомления уже включены!")
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                logging.error(f"Network error while downloading calendar for user {user_id}: {e}")
+                await message.answer("Ошибка скачивания! Проверьте правильность ссылки и пришлите ещё раз")
+            except OSError as e:
+                logging.error(f"File error while saving calendar for user {user_id}: {e}")
+                await message.answer("Ошибка сохранения файла! Попробуйте ещё раз")
+        else:
+            await message.answer("Ссылка должна вести на yandex.ru и оканчиваться .ics")
 
     if 'reply_to_message' in message and dc.clock_exists(user_id):
         text = "Для изменения времени вам надо в ответ на это сообщение прислать два числа через " \
@@ -312,10 +343,25 @@ async def update(wait_for):
 
             if du.url_exists(user_id):
                 if du.get_status(user_id):
-                    wget.download(du.get_url(user_id), f'../data/icals/{str(user_id)}_new.ics')
-
-                    os.remove(f'../data/icals/{str(user_id)}.ics')
-                    os.rename(f'../data/icals/{str(user_id)}_new.ics', f'../data/icals/{str(user_id)}.ics')
+                    url = du.get_url(user_id)
+                    if is_valid_ical_url(url):
+                        tmp_path = f'../data/icals/{str(user_id)}_new.ics'
+                        final_path = f'../data/icals/{str(user_id)}.ics'
+                        try:
+                            await download_ical(url, tmp_path)
+                            try:
+                                os.remove(final_path)
+                            except FileNotFoundError:
+                                logging.warning(f"Old calendar not found for user {user_id}")
+                            except OSError as e:
+                                logging.error(f"Error removing old calendar for user {user_id}: {e}")
+                            os.rename(tmp_path, final_path)
+                        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                            logging.error(f"Network error updating calendar for user {user_id}: {e}")
+                        except OSError as e:
+                            logging.error(f"File error updating calendar for user {user_id}: {e}")
+                    else:
+                        logging.error(f"Invalid stored URL for user {user_id}: {url}")
 
 
 if __name__ == '__main__':
