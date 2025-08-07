@@ -166,10 +166,14 @@ async def start_up(message: types.Message):
     user_id = du.get_user_id(int(message.chat.id))
 
     if dc.clock_exists(user_id):
-        await message.bot.send_photo(chat_id=message.chat.id, photo=open("../data/photo_edit_alarm.jpg", "rb"),
-                                     caption="Для изменения времени вам надо в ответ на это сообщение прислать два "
-                                             "числа через пробел: разница времени первого и второго таймера по ходу "
-                                             "времени соответственно")
+        with open("../data/photo_edit_alarm.jpg", "rb") as photo:
+            await message.bot.send_photo(
+                chat_id=message.chat.id,
+                photo=photo,
+                caption="Для изменения времени вам надо в ответ на это сообщение прислать два "
+                        "числа через пробел: разница времени первого и второго таймера по ходу "
+                        "времени соответственно"
+            )
     else:
         await message.answer("Для того, чтобы изменить таймеры, вы должны прислать ical-ссылку на свой календарь!")
 
