@@ -25,7 +25,7 @@ Y.Calendarkin — некоммерческий проект, предназна�
 - **Bot Framework**: Aiogram 3.x
 - **Database**: SQLite
 - **Calendar Processing**: icalendar, dateutil
-- **HTTP Client**: wget
+- **HTTP Client**: aiohttp
 - **Timezone Support**: pytz
 
 ## 🚀 Установка и запуск
