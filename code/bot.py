@@ -23,9 +23,15 @@ def is_valid_ical_url(url: str) -> bool:
         parsed = urlparse(url)
     except ValueError:
         return False
-    return (parsed.scheme in ('http', 'https') and
-            parsed.netloc.endswith('yandex.ru') and
-            parsed.path.endswith('.ics'))
+    if parsed.scheme not in ('http', 'https'):
+        return False
+    if not parsed.netloc.endswith('yandex.ru'):
+        return False
+    if parsed.path.endswith('.ics'):
+        return True
+    if parsed.path == '/export/ics.xml' and 'private_token=' in parsed.query:
+        return True
+    return False
 
 
 async def download_ical(url: str, dest: str) -> None:
@@ -249,7 +255,7 @@ async def downloading_file_ics(message: types.Message):
                 logging.error(f"File error while saving calendar for user {user_id}: {e}")
                 await message.answer("Ошибка сохранения файла! Попробуйте ещё раз")
         else:
-            await message.answer("Ссылка должна вести на yandex.ru и оканчиваться .ics")
+            await message.answer("Ссылка должна вести на yandex.ru и быть ссылкой экспорта календаря")
 
     if 'reply_to_message' in message and dc.clock_exists(user_id):
         text = "Для изменения времени вам надо в ответ на это сообщение прислать два числа через " \
