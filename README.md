@@ -25,7 +25,7 @@ Y.Calendarkin — некоммерческий проект, предназна�
 - **Bot Framework**: Aiogram 3.x
 - **Database**: SQLite
 - **Calendar Processing**: icalendar, dateutil
-- **HTTP Client**: wget
+- **HTTP Client**: aiohttp
 - **Timezone Support**: pytz
 
 ## 🚀 Установка и запуск
@@ -39,10 +39,10 @@ pip install -r requirements.txt
 ### Настройка
 
 1. Создайте нового бота через [@BotFather](https://t.me/BotFather)
-2. Получите токен и добавьте его в `config.py`:
+2. Получите токен и сохраните его в переменной окружения `BOT_TOKEN`:
 
-```python
-TOKEN = "your_bot_token_here"
+```bash
+export BOT_TOKEN="your_bot_token_here"
 ```
 
 3. Создайте структуру каталогов:
@@ -52,6 +52,8 @@ mkdir -p data/icals db
 ```
 
 ### Запуск
+
+Убедитесь, что переменная окружения `BOT_TOKEN` установлена.
 
 ```bash
 cd code

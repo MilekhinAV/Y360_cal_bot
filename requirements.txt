@@ -9,7 +9,7 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
 
 # HTTP client for downloading calendar files
-wget==3.2
+aiohttp>=3.9.0
 
 # Database (built-in with Python)
 # sqlite3 - included in Python standard library
