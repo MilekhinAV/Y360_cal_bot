@@ -25,7 +25,7 @@ def is_valid_ical_url(url: str) -> bool:
         return False
     if parsed.scheme not in ('http', 'https'):
         return False
-    if not parsed.netloc.endswith('yandex.ru'):
+    if not parsed.netloc.endswith(('yandex.ru', 'yandex-team.ru')):
         return False
     if parsed.path.endswith('.ics'):
         return True
