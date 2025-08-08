@@ -51,10 +51,9 @@ async def helps(message: types.Message):
     if not du.user_exists(tg_id):
         du.add_user(tg_id)
 
-    buttons = [types.InlineKeyboardButton(text="КОМАНДЫ", callback_data="com"),
-               types.InlineKeyboardButton(text="АВТОР", callback_data="auth")]
+    buttons = [types.InlineKeyboardButton(text="КОМАНДЫ", callback_data="com")]
 
-    keyboard = types.InlineKeyboardMarkup(row_width=2)
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
 
     await message.answer(text="<b>Я.Календаркин</b> - бот для оповещения о событиях из <b>Яндекс.Календаря</b>. "
@@ -63,16 +62,6 @@ async def helps(message: types.Message):
                               "и появится возможность настройки оповещений. О том, какие команды есть для настройки, "
                               "вы можете ознакомиться по кнопке <b>КОМАНДЫ</b>",
                          parse_mode=ParseMode.HTML, reply_markup=keyboard)
-
-
-@dp.callback_query_handler(text="auth")
-async def author(call: types.CallbackQuery):
-    await call.message.answer(text='*| АВТОР |*\n\n*>>* Этот бот не коммерческий проект, для упрощенного получения '
-                                   'уведомлений о событиях в Яндекс.Календаре. Не многим этот бот будет полезен, но '
-                                   'людям, чья работа подразумевает его использование, он станет лишь удобным '
-                                   'инструментом. Я же пишу подобные небольшие проекты, о которых вы можете узнать '
-                                   'больше на моём [GitHub](https://github.com/IGlek).',
-                              parse_mode=ParseMode.MARKDOWN)
 
 
 @dp.callback_query_handler(text="com")
